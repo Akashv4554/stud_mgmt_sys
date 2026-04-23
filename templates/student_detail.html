@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Details - {{ student.user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex align-items-center justify-content-between">
+    <div>
+        <h2 class="fw-bold mb-1">Student Attendance Detail</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'attendance' %}">Attendance</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ student.user.get_full_name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Basic Info -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title fw-bold text-primary border-bottom pb-2 mb-3">Basic Info</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Name</span>
+                        <span class="fw-semibold">{{ student.user.first_name }} {{ student.user.last_name }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">USN</span>
+                        <span class="fw-bold font-monospace">{{ student.usn }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Department</span>
+                        <span class="fw-semibold">{{ student.department.name }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Current Semester</span>
+                        <span class="fw-bold badge bg-secondary text-white">{{ student.semester }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="col-12 col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body row">
+                <div class="col-6 mb-3">
+                    <h6 class="fw-bold text-center text-muted">Subject vs Attendance %</h6>
+                    <div style="position: relative; height:200px;">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <h6 class="fw-bold text-center text-muted">Present vs Absent (Overall)</h6>
+                    <div style="position: relative; height:200px;">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <h6 class="fw-bold text-center text-muted">Semester-wise Trend</h6>
+                    <div style="position: relative; height:200px;">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Table (ALL semesters) -->
+<div class="card border-0 shadow-sm overflow-hidden mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-table me-2 text-primary"></i>All Semesters Attendance</h5>
+    </div>
+    <div class="card-body p-0 mt-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3">Semester</th>
+                        <th class="py-3">Subject Code</th>
+                        <th class="py-3">Subject Name</th>
+                        <th class="py-3 text-center">Total Classes</th>
+                        <th class="py-3 text-center">Present</th>
+                        <th class="px-4 py-3 text-end">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_data %}
+                    <tr>
+                        <td class="px-4 py-3"><span class="badge bg-secondary">{{ row.semester }}</span></td>
+                        <td class="py-3 fw-bold font-monospace">{{ row.subject_code }}</td>
+                        <td class="py-3 fw-semibold">{{ row.subject_name }}</td>
+                        <td class="py-3 text-center">{{ row.total_classes }}</td>
+                        <td class="py-3 text-center fw-bold text-success">{{ row.present }}</td>
+                        <td class="px-4 py-3 text-end">
+                            <span class="badge {% if row.percentage >= 75 %}bg-success-subtle text-success{% elif row.percentage >= 60 %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %} border px-3 py-2 fs-6">
+                                {{ row.percentage }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-5 text-center text-muted">
+                            <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                            No attendance records found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const chartData = JSON.parse('{{ chart_data|escapejs }}');
+    
+    // Bar Chart: Subject vs Attendance %
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.bar_labels,
+            datasets: [{
+                label: 'Attendance %',
+                data: chartData.bar_data,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Pie Chart: Present vs Absent
+    new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Absent'],
+            datasets: [{
+                data: chartData.pie_data,
+                backgroundColor: ['rgba(75, 192, 192, 0.7)', 'rgba(255, 99, 132, 0.7)'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // Line Chart: Semester-wise Trend
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: chartData.line_labels,
+            datasets: [{
+                label: 'Semester Overall %',
+                data: chartData.line_data,
+                fill: true,
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                tension: 0.4,
+                pointBackgroundColor: 'rgba(153, 102, 255, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - College ERP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Admin Dashboard</h2>
+    <div class="text-muted small">System Overview</div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm bg-gradient-primary text-white h-100" style="background: linear-gradient(45deg, #4e73df, #224abe);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-uppercase small fw-bold opacity-75">Total Students</h6>
+                    <h2 class="mb-0 fw-bold">{{ total_students }}</h2>
+                </div>
+                <i class="bi bi-people fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm bg-gradient-success text-white h-100" style="background: linear-gradient(45deg, #1cc88a, #13855c);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-uppercase small fw-bold opacity-75">Active Faculty</h6>
+                    <h2 class="mb-0 fw-bold">{{ total_faculty }}</h2>
+                </div>
+                <i class="bi bi-person-workspace fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm bg-gradient-info text-white h-100" style="background: linear-gradient(45deg, #36b9cc, #258391);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-uppercase small fw-bold opacity-75">Departments</h6>
+                    <h2 class="mb-0 fw-bold">{{ total_departments }}</h2>
+                </div>
+                <i class="bi bi-building fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="fw-bold mb-0 text-dark">Student Distribution by Department</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="studentChart" style="min-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="fw-bold mb-0 text-dark">Faculty Distribution</h5>
+            </div>
+            <div class="card-body d-flex align-items-center">
+                <canvas id="facultyChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Data from Django context
+        const studentData = {{ dept_student_data|safe }};
+        const facultyData = {{ dept_faculty_data|safe }};
+
+        // Student Bar Chart
+        new Chart(document.getElementById('studentChart'), {
+            type: 'bar',
+            data: {
+                labels: studentData.map(item => item.department__name),
+                datasets: [{
+                    label: 'Number of Students',
+                    data: studentData.map(item => item.total),
+                    backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                    borderColor: '#4e73df',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { drawBorder: false } },
+                    x: { grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Faculty Doughnut Chart
+        new Chart(document.getElementById('facultyChart'), {
+            type: 'doughnut',
+            data: {
+                labels: facultyData.map(item => item.department__name),
+                datasets: [{
+                    data: facultyData.map(item => item.total),
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'],
+                    hoverOffset: 10,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

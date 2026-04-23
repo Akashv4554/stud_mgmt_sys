@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard - College ERP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Student Portal</h2>
+    <div class="text-muted small">Academic Records</div>
+</div>
+
+{% if profile_missing %}
+<div class="alert alert-warning shadow-sm border-0 d-flex align-items-center" role="alert">
+    <i class="bi bi-person-exclamation fs-4 me-3"></i>
+    <div>
+        <strong>Profile Not Found:</strong> We couldn't locate your Student profile. Your grades and attendance won't be visible.
+    </div>
+</div>
+{% else %}
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm text-center h-100">
+            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 80px; height: 80px;">
+                <i class="bi bi-person-fill fs-1"></i>
+            </div>
+            <h5 class="fw-bold mb-0">{{ request.user.get_full_name|default:request.user.username }}</h5>
+            <p class="text-muted small mb-3">{{ student.usn }}</p>
+            <div class="p-2 bg-light rounded small fw-bold text-uppercase border">
+                {{ student.department.code }}
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-6 border-end">
+                    <div class="text-muted small">Semester</div>
+                    <div class="fw-bold h5 mb-0">{{ student.semester }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted small">Section</div>
+                    <div class="fw-bold h5 mb-0">{{ student.section }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="row g-4 h-100">
+            <div class="col-md-6">
+                <div class="card p-4 border-0 shadow-sm bg-primary text-white text-center h-100 d-flex flex-column justify-content-center">
+                    <h6 class="text-uppercase small opacity-75">Attendance Overview</h6>
+                    <h1 class="display-3 fw-bold mb-0">{{ attendance_percentage }}%</h1>
+                    <div class="progress mt-3 bg-white bg-opacity-25" style="height: 8px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: {{ attendance_percentage }}%"></div>
+                    </div>
+                    <p class="mt-3 mb-0 opacity-75">Cumulative Attendance</p>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card p-4 border-0 shadow-sm text-center">
+                    <h5 class="fw-bold mb-3">Next Steps</h5>
+                    <p class="text-muted">View your detailed subject-wise breakdown in the <strong>Attendance</strong> section or view your department details.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'attendance' %}" class="btn btn-primary px-4 fw-bold">Subject Breakdown</a>
+                        <a href="{% url 'departments' %}" class="btn btn-outline-dark px-4 fw-bold">View Departments</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

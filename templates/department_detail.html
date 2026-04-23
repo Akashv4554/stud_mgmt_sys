@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dept.name }} Analytics - College Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'departments' %}" class="text-decoration-none">Departments</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ dept.code }}</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-0 text-primary">{{ dept.name }} Dashboard</h2>
+    </div>
+    <a href="{% url 'departments' %}" class="btn btn-outline-dark">
+        <i class="bi bi-arrow-left me-2"></i> Back to List
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-5 text-center">
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm bg-primary text-white">
+            <h6 class="text-uppercase small mb-2 opacity-75">Total Students</h6>
+            <h1 class="mb-0 fw-bold">{{ total_students }}</h1>
+            <i class="bi bi-people fs-1 opacity-25 mt-2"></i>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm bg-dark text-white">
+            <h6 class="text-uppercase small mb-2 opacity-75">Active Faculty</h6>
+            <h1 class="mb-0 fw-bold">{{ total_faculty }}</h1>
+            <i class="bi bi-person-workspace fs-1 opacity-25 mt-2"></i>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm bg-success text-white">
+            <h6 class="text-uppercase small mb-2 opacity-75">Dept Attendance</h6>
+            <h1 class="mb-0 fw-bold">{{ attendance_percentage }}%</h1>
+            <i class="bi bi-calendar-check fs-1 opacity-25 mt-2"></i>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4 border-0 shadow-sm bg-info text-white">
+            <h6 class="text-uppercase small mb-2 opacity-75">Average SGPA</h6>
+            <h1 class="mb-0 fw-bold">{{ avg_sgpa }} <small class="fs-6 opacity-75">/ 10</small></h1>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4 border-0 shadow-sm bg-warning text-dark">
+            <h6 class="text-uppercase small mb-2 opacity-75">Average CGPA</h6>
+            <h1 class="mb-0 fw-bold">{{ avg_cgpa }} <small class="fs-6 opacity-75">/ 10</small></h1>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-5">
+    <div class="col-md-8">
+        <div class="card p-4 border-0 shadow-sm h-100">
+            <h5 class="fw-bold mb-4">Students vs Faculty Ratio</h5>
+            <canvas id="deptChart" height="150"></canvas>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 border-0 shadow-sm h-100">
+            <h5 class="fw-bold mb-4">Attendance Status</h5>
+            <canvas id="attendanceChart" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Student List -->
+<div class="card border-0 shadow-sm p-4">
+    <h5 class="fw-bold mb-4">Students Enrolled in {{ dept.code }}</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">USN</th>
+                    <th>Full Name</th>
+                    <th class="text-center">Semester</th>
+                    <th class="text-center">Section</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students_list %}
+                <tr>
+                    <td class="ps-4 fw-bold">{{ student.usn }}</td>
+                    <td>{{ student.user.get_full_name|default:student.user.username }}</td>
+                    <td class="text-center">Sem {{ student.semester }}</td>
+                    <td class="text-center">{{ student.section }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">No students found in this department.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Chart Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Bar Chart: Students vs Faculty
+    const ctx = document.getElementById('deptChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Students', 'Faculty'],
+            datasets: [{
+                label: 'Headcount',
+                data: [{{ total_students }}, {{ total_faculty }}],
+                backgroundColor: ['#0d6efd', '#212529'],
+                borderRadius: 8,
+                barThickness: 60
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Doughnut Chart: Attendance Distribution
+    const ctx2 = document.getElementById('attendanceChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present (%)', 'Absent (%)'],
+            datasets: [{
+                data: [{{ attendance_percentage }}, 100 - {{ attendance_percentage }}],
+                backgroundColor: ['#198754', '#dee2e6'],
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

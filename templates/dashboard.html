@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - College Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Welcome, {{ request.user.get_full_name|default:request.user.username }}</h2>
+    <span class="badge bg-dark rounded-pill px-3 py-2 text-uppercase">{{ role }} Portal</span>
+</div>
+
+{% if request.user.role == 'admin' %}
+    <!-- Admin Dashboard Content -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card p-3 bg-primary text-white border-0 shadow">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase small mb-1 opacity-75">Total Students</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.total_students }}</h2>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-white border-0 shadow" style="background-color: #6f42c1;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase small mb-1 opacity-75">Total Faculty</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.total_faculty }}</h2>
+                    </div>
+                    <i class="bi bi-person-workspace fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 bg-success text-white border-0 shadow">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase small mb-1 opacity-75">Departments</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.total_departments }}</h2>
+                    </div>
+                    <i class="bi bi-building fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 bg-info text-white border-0 shadow">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase small mb-1 opacity-75">Avg SGPA</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.avg_sgpa|floatformat:2 }}</h2>
+                    </div>
+                    <i class="bi bi-star fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-4 border-0 shadow-sm">
+                <h5 class="fw-bold mb-4">Attendance Trend (%)</h5>
+                <canvas id="attendanceChart" height="250"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4 border-0 shadow-sm">
+                <h5 class="fw-bold mb-4">Dept Performance (Avg SGPA)</h5>
+                <canvas id="performanceChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Charts initialization for Admin
+        const ctx1 = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: {{ attendance_labels|safe }},
+                datasets: [{
+                    label: 'Attendance Rate',
+                    data: {{ attendance_values|safe }},
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+
+        const ctx2 = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: {{ performance_labels|safe }},
+                datasets: [{
+                    label: 'Average SGPA',
+                    data: {{ performance_values|safe }},
+                    backgroundColor: '#6f42c1',
+                    borderRadius: 8
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, max: 10 } } }
+        });
+    </script>
+
+{% elif request.user.role == 'faculty' %}
+    <!-- Faculty Dashboard Content -->
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card p-4 border-0 shadow-sm mb-4">
+                <h5 class="fw-bold mb-3">Your Details</h5>
+                <p class="mb-1 text-muted">Department: <span class="text-dark fw-bold">{{ faculty.department.name }}</span></p>
+                <p class="mb-1 text-muted">Experience: <span class="text-dark fw-bold">{{ faculty.experience_years }} Years</span></p>
+                <p class="mb-1 text-muted">Role: <span class="text-dark fw-bold text-capitalize">{{ faculty.designation }}</span></p>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card p-4 border-0 shadow-sm mb-4">
+                <h5 class="fw-bold mb-3">Assigned Subjects</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Subject Name</th>
+                                <th>Semester</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject in subjects %}
+                            <tr>
+                                <td><span class="badge bg-secondary">{{ subject.code }}</span></td>
+                                <td>{{ subject.name }}</td>
+                                <td>{{ subject.semester }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted">No subjects assigned.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card p-4 border-0 shadow-sm">
+        <h5 class="fw-bold mb-3">Recent Attendance Entries</h5>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Student</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in recent_attendance %}
+                    <tr>
+                        <td>{{ record.date }}</td>
+                        <td>{{ record.student.usn }}</td>
+                        <td>{{ record.subject.code }}</td>
+                        <td>
+                            {% if record.status == 'present' %}
+                                <span class="badge bg-success-subtle text-success px-3">Present</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger px-3">Absent</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% elif request.user.role == 'student' %}
+    <!-- Student Dashboard Content -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card p-4 border-0 shadow-sm h-100">
+                <div class="text-center mb-3">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-fill fs-1"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0">{{ student.user.get_full_name }}</h5>
+                    <p class="text-muted">{{ student.usn }}</p>
+                </div>
+                <hr>
+                <p class="mb-1 small text-muted text-uppercase">Department</p>
+                <p class="fw-bold mb-3">{{ student.department.name }}</p>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <p class="mb-0 small text-muted">Semester</p>
+                        <p class="fw-bold">{{ student.semester }}</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-0 small text-muted">Section</p>
+                        <p class="fw-bold">{{ student.section }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="row g-4 h-100">
+                <div class="col-md-6">
+                    <div class="card p-4 border-0 shadow-sm bg-primary text-white text-center">
+                        <h6 class="text-uppercase small opacity-75">Attendance Overview</h6>
+                        <h1 class="display-4 fw-bold mb-0">{{ attendance_percentage }}%</h1>
+                        <p class="mb-0 opacity-75">Cumulative Attendance</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-4 border-0 shadow-sm bg-success text-white text-center">
+                        <h6 class="text-uppercase small opacity-75">Current CGPA</h6>
+                        <h1 class="display-4 fw-bold mb-0">{{ latest_result.cgpa|default:"0.00" }}</h1>
+                        <p class="mb-0 opacity-75">Semester {{ latest_result.semester }} Status</p>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card p-4 border-0 shadow-sm">
+                        <h5 class="fw-bold mb-3">Academic History</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Semester</th>
+                                        <th>Credits</th>
+                                        <th>SGPA</th>
+                                        <th>CGPA</th>
+                                        <th>Report</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for res in results %}
+                                    <tr>
+                                        <td>Sem {{ res.semester }}</td>
+                                        <td>{{ res.total_credits }}</td>
+                                        <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ res.sgpa }}</span></td>
+                                        <td><span class="badge bg-success-subtle text-success fw-bold">{{ res.cgpa }}</span></td>
+                                        <td>
+                                            <a href="{% url 'student_pdf' student.id %}?semester={{ res.semester }}" class="btn btn-sm btn-outline-dark">
+                                                <i class="bi bi-file-pdf"></i> PDF
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center text-muted">No academic records found.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
